@@ -94,15 +94,15 @@ export default function CyberPredictor() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center p-6 perspective-1000">
+    <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center p-4 md:p-6 perspective-1000">
       
       {/* LEFT: Cyber Form */}
-      <div className="lg:col-span-6 relative z-10" ref={cardRef}>
+      <div className="lg:col-span-6 relative z-10 w-full" ref={cardRef}>
         {/* Animated Borders */}
         <div className="absolute -inset-[1px] bg-gradient-to-tr from-cyan-500 via-transparent to-purple-500 opacity-50 rounded-lg"></div>
         <div className="absolute inset-0 bg-black/90 backdrop-blur-3xl rounded-lg"></div>
         
-        <div className="relative p-10 overflow-hidden">
+        <div className="relative p-6 md:p-10 overflow-hidden">
           {/* Background data patterns */}
           <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
             <div className="text-[8px] font-mono leading-none">
@@ -112,9 +112,9 @@ export default function CyberPredictor() {
             </div>
           </div>
 
-          <div className="mb-12 relative">
-            <span className="text-[10px] font-mono text-cyan-500 tracking-[0.5em] block mb-2">INITIALIZING_PROTOCOL</span>
-            <h2 className="text-4xl font-black text-white italic tracking-tighter uppercase flex items-center gap-4">
+          <div className="mb-8 md:mb-12 relative">
+            <span className="text-[8px] md:text-[10px] font-mono text-cyan-500 tracking-[0.5em] block mb-2">INITIALIZING_PROTOCOL</span>
+            <h2 className="text-2xl md:text-4xl font-black text-white italic tracking-tighter uppercase flex items-center gap-4">
               <span className="w-8 h-[2px] bg-cyan-500"></span>
               Data Input
             </h2>
@@ -179,11 +179,11 @@ export default function CyberPredictor() {
       </div>
 
       {/* RIGHT: Results / Visuals */}
-      <div className="lg:col-span-6 relative flex flex-col justify-center min-h-[500px]">
+      <div className="lg:col-span-6 relative flex flex-col justify-center min-h-[350px] md:min-h-[500px] w-full">
         {loading && (
-          <div className="w-full px-12 text-center">
+          <div className="w-full px-6 md:px-12 text-center">
             <div className="mb-8">
-              <div className="text-[10px] font-mono text-cyan-400 mb-2 animate-pulse tracking-widest uppercase">Accessing_Global_Market_Data...</div>
+              <div className="text-[8px] md:text-[10px] font-mono text-cyan-400 mb-2 animate-pulse tracking-widest uppercase">Accessing_Global_Market_Data...</div>
               <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
                 <div ref={progressRef} className="h-full w-0 bg-cyan-500 shadow-[0_0_15px_#06b6d4]"></div>
               </div>
@@ -234,19 +234,19 @@ export default function CyberPredictor() {
               <div className="flex justify-between items-end">
                 <div>
                   <p className="text-[10px] text-white/40 uppercase tracking-[0.4em] mb-4">Neural_Predicted_Value</p>
-                  <div className="text-7xl font-black text-white tracking-tighter italic flex items-start gap-2">
-                    <span className="text-3xl text-cyan-500 mt-2">$</span>
+                  <h3 className="text-5xl md:text-7xl font-black text-white tracking-tighter italic flex items-start gap-2">
+                    <span className="text-xl md:text-3xl text-cyan-500 mt-1 md:mt-2">$</span>
                     {result.price.toLocaleString()}
-                  </div>
+                  </h3>
                 </div>
-                <div className="text-right space-y-4">
+                <div className="text-right space-y-2 md:space-y-4">
                   <div>
-                    <div className="text-[10px] text-white/40 uppercase mb-1">Accuracy</div>
-                    <div className="text-cyan-400 font-mono text-xl font-bold">99.8%</div>
+                    <div className="text-[8px] md:text-[10px] text-white/40 uppercase mb-1">Accuracy</div>
+                    <div className="text-cyan-400 font-mono text-lg md:text-xl font-bold">99.8%</div>
                   </div>
                   <div>
-                    <div className="text-[10px] text-white/40 uppercase mb-1">Loss_Delta</div>
-                    <div className="text-red-500 font-mono">-${result.deprecation}</div>
+                    <div className="text-[8px] md:text-[10px] text-white/40 uppercase mb-1">Loss_Delta</div>
+                    <div className="text-red-500 font-mono text-sm md:text-base">-${result.deprecation}</div>
                   </div>
                 </div>
               </div>
