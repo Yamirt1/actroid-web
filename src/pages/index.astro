@@ -1,11 +1,125 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
-
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+import Predictor from '../components/Predictor';
+import '../styles/global.css';
 ---
 
-<Layout>
-	<Welcome />
-</Layout>
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Actroid - Intelligent Price Predictor</title>
+    <!-- Fuente Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-slate-950 text-slate-200 antialiased selection:bg-cyan-500 selection:text-white">
+
+    <div class="relative w-full overflow-hidden glow-bg">
+        
+        <!-- Navbar Simple -->
+        <nav class="container mx-auto px-6 py-6 flex justify-between items-center relative z-10">
+            <div class="text-2xl font-bold text-white tracking-tighter" id="logo">
+                ACT<span class="text-cyan-400">ROID</span>
+            </div>
+            <div class="flex gap-6 items-center">
+                <a href="/cyber" class="text-[10px] tracking-widest uppercase text-cyan-400/50 hover:text-cyan-400 transition-colors">
+                    Diseño Cyber
+                </a>
+                <a href="#agente" class="text-sm font-medium text-slate-300 hover:text-white transition-colors">
+                    Probar Predictor
+                </a>
+            </div>
+        </nav>
+
+        <!-- HERO SECTION -->
+        <section class="container mx-auto px-6 pt-20 pb-32 flex flex-col items-center text-center relative z-10 min-h-[70vh] justify-center">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-sm font-medium mb-6 opacity-0" id="hero-badge">
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+                </span>
+                Modelo Predictivo Entrenado
+            </div>
+            
+            <h1 class="text-5xl md:text-7xl font-extrabold text-white mb-6 max-w-4xl tracking-tight leading-tight opacity-0" id="hero-title">
+                Actroid: El Agente<br><span class="text-cyan-400">que predice el futuro.</span>
+            </h1>
+            
+            <p class="text-lg md:text-xl text-slate-400 max-w-2xl mb-10 leading-relaxed opacity-0" id="hero-desc">
+                Ingresa las especificaciones del vehículo. Nuestro modelo de Machine Learning analizará miles de registros históricos para predecir el precio de mercado exacto.
+            </p>
+            
+            <a href="#agente" class="group relative px-8 py-4 bg-white text-slate-950 font-semibold rounded-full hover:bg-slate-200 transition-all duration-300 shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] hover:shadow-[0_0_60px_-15px_rgba(255,255,255,0.5)] flex items-center gap-2 opacity-0" id="hero-btn">
+                Iniciar Predicción
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 group-hover:translate-x-1 transition-transform" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+            </a>
+        </section>
+    </div>
+
+    <!-- PREDICCIÓN / FORMULARIO SECTION -->
+    <section id="agente" class="container mx-auto px-6 py-24">
+        <Predictor client:load />
+    </section>
+
+    <!-- GSAP & Lenis Animations -->
+    <script>
+        import { gsap } from 'gsap';
+        import { ScrollTrigger } from 'gsap/ScrollTrigger';
+        import Lenis from 'lenis';
+
+        // Initialize Lenis
+        const lenis = new Lenis({
+          duration: 1.2,
+          easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+          orientation: 'vertical',
+          gestureOrientation: 'vertical',
+          smoothWheel: true,
+          wheelMultiplier: 1,
+          smoothTouch: false,
+          touchMultiplier: 2,
+          infinite: false,
+        });
+
+        function raf(time) {
+          lenis.raf(time);
+          requestAnimationFrame(raf);
+        }
+
+        requestAnimationFrame(raf);
+
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Sync ScrollTrigger with Lenis
+        lenis.on('scroll', ScrollTrigger.update);
+        
+        gsap.ticker.add((time) => {
+          lenis.raf(time * 1000);
+        });
+
+        gsap.ticker.lagSmoothing(0);
+
+        // Entrance Timeline
+        const tl = gsap.timeline({ defaults: { ease: 'power4.out', duration: 1.2 } });
+
+        tl.to('#logo', { opacity: 1, y: 0, duration: 0.8 })
+          .fromTo('#hero-badge', { opacity: 0, y: -20 }, { opacity: 1, y: 0 }, '-=0.4')
+          .fromTo('#hero-title', { opacity: 0, y: 30 }, { opacity: 1, y: 0 }, '-=0.6')
+          .fromTo('#hero-desc', { opacity: 0, y: 20 }, { opacity: 1, y: 0 }, '-=0.8')
+          .fromTo('#hero-btn', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1 }, '-=0.8');
+
+        // Scroll Reveal for Predictor
+        gsap.from('#agente', {
+            scrollTrigger: {
+                trigger: '#agente',
+                start: 'top 80%',
+            },
+            opacity: 0,
+            y: 50,
+            duration: 1.5,
+            ease: 'power3.out'
+        });
+    </script>
+</body>
+</html>
