@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
-import rfModel from './rf_model.json';
+import { VEHICLE_DATA, getSpecs } from './vehicleData';
 
 export default function CyberPredictor() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [formData, setFormData] = useState({
     marca: '',
+    modelo: '',
     year: 2024,
     mileage: 0,
     fuel: 'electric',
@@ -23,6 +24,60 @@ export default function CyberPredictor() {
   const progressRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+
+  // Dynamic filter validation
+  useEffect(() => {
+    if (!formData.marca) {
+      setFormData(prev => ({ ...prev, modelo: '' }));
+      return;
+    }
+
+    const brandLower = formData.marca.toLowerCase();
+    const validModels = VEHICLE_DATA[brandLower] ? Object.keys(VEHICLE_DATA[brandLower]) : [];
+    if (formData.modelo && !validModels.includes(formData.modelo.toLowerCase())) {
+      setFormData(prev => ({ ...prev, modelo: '' }));
+      return;
+    }
+
+    if (formData.modelo) {
+      const specs = getSpecs(formData.marca, formData.modelo);
+      setFormData(prev => {
+        let updated = { ...prev };
+        let changed = false;
+
+        if (specs.years.length > 0 && !specs.years.includes(prev.year)) {
+          updated.year = specs.years[0];
+          changed = true;
+        }
+        if (specs.cylinders.length > 0 && !specs.cylinders.includes(prev.cylinders)) {
+          updated.cylinders = specs.cylinders[0];
+          changed = true;
+        }
+        if (specs.fuels.length > 0 && !specs.fuels.includes(prev.fuel)) {
+          updated.fuel = specs.fuels[0];
+          changed = true;
+        }
+        if (specs.transmissions.length > 0 && !specs.transmissions.includes(prev.transmission)) {
+          updated.transmission = specs.transmissions[0];
+          changed = true;
+        }
+        if (specs.types.length > 0 && !specs.types.includes(prev.type)) {
+          updated.type = specs.types[0];
+          changed = true;
+        }
+        if (specs.sizes.length > 0 && !specs.sizes.includes(prev.size)) {
+          updated.size = specs.sizes[0];
+          changed = true;
+        }
+        if (specs.drives.length > 0 && !specs.drives.includes(prev.drive)) {
+          updated.drive = specs.drives[0];
+          changed = true;
+        }
+
+        return changed ? updated : prev;
+      });
+    }
+  }, [formData.marca, formData.modelo]);
 
   // Parallax Effect
   useEffect(() => {
@@ -84,120 +139,53 @@ export default function CyberPredictor() {
       }
     }, 50);
 
-    setTimeout(() => {
-      const mapSize = (s: string) => {
-        switch(s) {
-          case 'sub-compact': return 0;
-          case 'compact': return 1;
-          case 'mid-size': return 2;
-          case 'full-size': return 3;
-          default: return 2;
-        }
-      };
+    // Fetch prediction from FastAPI backend
+    const fetchPromise = fetch("http://127.0.0.1:8000/predict", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formData),
+    }).then(res => {
+      if (!res.ok) throw new Error("API error");
+      return res.json();
+    });
 
-      const mapTitleStatus = (t: string) => {
-        switch(t) {
-          case 'parts only': return 0;
-          case 'missing': return 1;
-          case 'salvage': return 2;
-          case 'rebuilt': return 3;
-          case 'lien': return 4;
-          case 'clean': return 5;
-          default: return 5;
-        }
-      };
+    const delayPromise = new Promise(resolve => setTimeout(resolve, 2000));
 
-      const mapCondition = (c: string) => {
-        switch(c) {
-          case 'salvage': return 0;
-          case 'fair': return 1;
-          case 'good': return 2;
-          case 'excellent': return 3;
-          case 'like new': return 4;
-          case 'new': return 5;
-          default: return 3;
-        }
-      };
+    Promise.all([fetchPromise, delayPromise])
+      .then(([apiResult]) => {
+        const keyword = `${formData.marca} ${formData.modelo}`.trim().toLowerCase().replace(/\s+/g, ',');
+        const imageUrl = `https://loremflickr.com/800/600/${keyword || 'futuristic,car'},car?random=${Math.random()}`;
 
-      const featureMap: Record<string, number> = {
-        odometer: formData.mileage,
-        size: mapSize(formData.size),
-        title_status: mapTitleStatus(formData.titleStatus),
-        year: formData.year,
-        condition_encoding: mapCondition(formData.condition),
-        cylinders_int: formData.cylinders,
-        fuel_diesel: formData.fuel === 'diesel' ? 1 : 0,
-        fuel_electric: formData.fuel === 'electric' ? 1 : 0,
-        fuel_gas: formData.fuel === 'gas' ? 1 : 0,
-        fuel_hybrid: formData.fuel === 'hybrid' ? 1 : 0,
-        drive_4wd: formData.drive === '4wd' ? 1 : 0,
-        drive_fwd: formData.drive === 'fwd' ? 1 : 0,
-        drive_rwd: formData.drive === 'rwd' ? 1 : 0,
-        transmission_automatic: formData.transmission === 'automatic' ? 1 : 0,
-        transmission_manual: formData.transmission === 'manual' ? 1 : 0,
-        transmission_other: formData.transmission === 'other' ? 1 : 0,
-        type_SUV: formData.type === 'suv' ? 1 : 0,
-        type_bus: formData.type === 'bus' ? 1 : 0,
-        type_convertible: formData.type === 'convertible' ? 1 : 0,
-        type_coupe: formData.type === 'coupe' ? 1 : 0,
-        type_hatchback: formData.type === 'hatchback' ? 1 : 0,
-        'type_mini-van': formData.type === 'mini-van' ? 1 : 0,
-        type_offroad: formData.type === 'offroad' ? 1 : 0,
-        type_other: formData.type === 'other' ? 1 : 0,
-        type_pickup: formData.type === 'pickup' ? 1 : 0,
-        type_sedan: formData.type === 'sedan' ? 1 : 0,
-        type_truck: formData.type === 'truck' ? 1 : 0,
-        type_van: formData.type === 'van' ? 1 : 0,
-        type_wagon: formData.type === 'wagon' ? 1 : 0,
-      };
-
-      const inputVector = rfModel.features.map(feat => featureMap[feat] ?? 0);
-
-      // Evaluate the Random Forest trees
-      let totalPrediction = 0;
-      const trees = rfModel.trees;
-      
-      for (let t = 0; t < trees.length; t++) {
-        const tree = trees[t];
-        let nodeIdx = 0;
+        setResult({
+          price: apiResult.price,
+          deprecation: apiResult.deprecation,
+          imageUrl: imageUrl,
+          brand: `${formData.marca} ${formData.modelo}`.trim().toUpperCase() || 'CORE_SYSTEM'
+        });
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Failed to fetch prediction from API, falling back to basic calculation", err);
+        // Fallback calculation so that the app doesn't break if API is offline
+        const fallbackPrice = 15000 + (formData.year - 2010) * 1000 - (formData.mileage * 0.05);
+        const keyword = `${formData.marca} ${formData.modelo}`.trim().toLowerCase().replace(/\s+/g, ',');
+        const imageUrl = `https://loremflickr.com/800/600/${keyword || 'futuristic,car'},car?random=${Math.random()}`;
         
-        while (true) {
-          const node = tree[nodeIdx];
-          const isLeaf = node[0];
-          
-          if (isLeaf) {
-            totalPrediction += node[1] as number;
-            break;
-          } else {
-            const featIdx = node[1] as number;
-            const threshold = node[2] as number;
-            const leftChild = node[3] as number;
-            const rightChild = node[4] as number;
-            
-            if (inputVector[featIdx] <= threshold) {
-              nodeIdx = leftChild;
-            } else {
-              nodeIdx = rightChild;
-            }
-          }
-        }
-      }
-
-      let predictedPrice = totalPrediction / trees.length;
-      if (predictedPrice < 200) predictedPrice = 200;
-
-      const deprecation = Math.floor(formData.mileage * 0.05);
-      const imageUrl = `https://loremflickr.com/800/600/${formData.marca.toLowerCase() || 'futuristic,car'},car?random=${Math.random()}`;
-
-      setResult({
-        price: predictedPrice,
-        deprecation: deprecation,
-        imageUrl: imageUrl,
-        brand: formData.marca.toUpperCase() || 'CORE_SYSTEM'
+        setResult({
+          price: fallbackPrice < 500 ? 500 : fallbackPrice,
+          deprecation: Math.floor(formData.mileage * 0.05),
+          imageUrl: imageUrl,
+          brand: `${formData.marca} ${formData.modelo}`.trim().toUpperCase() || 'CORE_SYSTEM'
+        });
+        setLoading(false);
       });
-      setLoading(false);
-    }, 2100);
   };
+
+  const specs = getSpecs(formData.marca, formData.modelo);
+  const models = formData.marca ? Object.keys(VEHICLE_DATA[formData.marca.toLowerCase()] || {}) : [];
+  const isFormLocked = !formData.marca || !formData.modelo;
 
   return (
     <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center p-4 md:p-6 perspective-1000">
@@ -229,7 +217,7 @@ export default function CyberPredictor() {
           <form className="space-y-8" onSubmit={(e) => { e.preventDefault(); handlePredict(); }} ref={formRef}>
             <div className="cyber-input-group relative group">
               <select
-                className="w-full bg-transparent border-b border-white/20 py-4 text-xl text-white font-light focus:outline-none focus:border-cyan-500 appearance-none capitalize"
+                className="w-full bg-transparent border-b border-white/20 py-4 text-xl text-white font-light focus:outline-none focus:border-cyan-500 appearance-none capitalize animate-pulse-slow"
                 value={formData.marca}
                 onChange={(e) => setFormData({ ...formData, marca: e.target.value })}
                 required
@@ -245,15 +233,37 @@ export default function CyberPredictor() {
               <div className="absolute bottom-0 left-0 w-0 h-[2px] bg-cyan-500 group-hover:w-full transition-all duration-500"></div>
             </div>
 
+            <div className="cyber-input-group relative group">
+              <select
+                className="w-full bg-transparent border-b border-white/20 py-4 text-xl text-white font-light focus:outline-none focus:border-cyan-500 disabled:opacity-30 disabled:cursor-not-allowed appearance-none capitalize"
+                value={formData.modelo}
+                onChange={(e) => setFormData({ ...formData, modelo: e.target.value })}
+                disabled={!formData.marca}
+                required
+              >
+                <option value="" className="bg-slate-950">
+                  {!formData.marca ? '[ SELECT BRAND FIRST ]' : '[ SELECT MODEL ]'}
+                </option>
+                {models.map((m) => (
+                  <option key={m} value={m} className="capitalize bg-slate-950">{m}</option>
+                ))}
+              </select>
+              <label className="absolute left-0 -top-4 text-white/30 text-[10px] tracking-widest">
+                [ VEHICLE_MODEL ]
+              </label>
+              <div className="absolute bottom-0 left-0 w-0 h-[2px] bg-cyan-500 group-hover:w-full transition-all duration-500"></div>
+            </div>
+
             <div className="grid grid-cols-2 gap-8">
               <div className="cyber-input-group relative group">
                 <select
-                  className="w-full bg-transparent border-b border-white/20 py-4 text-white focus:outline-none focus:border-purple-500 appearance-none"
+                  className="w-full bg-transparent border-b border-white/20 py-4 text-white focus:outline-none focus:border-purple-500 disabled:opacity-30 disabled:cursor-not-allowed appearance-none"
                   value={formData.year}
                   onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) || 2024 })}
+                  disabled={isFormLocked}
                   required
                 >
-                  {Array.from({ length: 2026 - 1980 + 1 }, (_, i) => 2026 - i).map((y) => (
+                  {specs.years.map((y) => (
                     <option key={y} value={y} className="bg-slate-950">{y}</option>
                   ))}
                 </select>
@@ -264,13 +274,15 @@ export default function CyberPredictor() {
               <div className="cyber-input-group relative group">
                 <input
                   type="number"
-                  className="w-full bg-transparent border-b border-white/20 py-4 text-white focus:outline-none focus:border-cyan-500 transition-all peer placeholder:opacity-0"
+                  className="w-full bg-transparent border-b border-white/20 py-4 text-white focus:outline-none focus:border-cyan-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all peer placeholder:opacity-0"
                   value={formData.mileage}
                   onChange={(e) => setFormData({ ...formData, mileage: parseInt(e.target.value) || 0 })}
+                  disabled={isFormLocked}
+                  placeholder="KILOMETER_COUNT"
                   required
                 />
                 <label className="absolute left-0 top-4 text-white/30 text-[10px] tracking-widest transition-all peer-focus:-top-4 peer-focus:text-cyan-400 peer-[&:not(:placeholder-shown)]:-top-4">
-                  KILOMETER_COUNT
+                  {isFormLocked ? 'KILOMETER_COUNT [LOCKED]' : 'KILOMETER_COUNT'}
                 </label>
               </div>
             </div>
@@ -278,17 +290,18 @@ export default function CyberPredictor() {
             <div className="grid grid-cols-2 gap-8">
               <div className="cyber-input-group relative group">
                 <select
-                  className="w-full bg-transparent border-b border-white/20 py-4 text-white focus:outline-none focus:border-cyan-500 transition-all appearance-none"
+                  className="w-full bg-transparent border-b border-white/20 py-4 text-white focus:outline-none focus:border-cyan-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all appearance-none"
                   value={formData.cylinders}
                   onChange={(e) => setFormData({ ...formData, cylinders: parseInt(e.target.value) })}
+                  disabled={isFormLocked}
                 >
-                  <option value={3} className="bg-slate-950">3 Cylinders</option>
-                  <option value={4} className="bg-slate-950">4 Cylinders</option>
-                  <option value={5} className="bg-slate-950">5 Cylinders</option>
-                  <option value={6} className="bg-slate-950">6 Cylinders</option>
-                  <option value={8} className="bg-slate-950">8 Cylinders</option>
-                  <option value={10} className="bg-slate-950">10 Cylinders</option>
-                  <option value={12} className="bg-slate-950">12 Cylinders</option>
+                  {[3, 4, 5, 6, 8, 10, 12].map((cyl) => {
+                    const isAvailable = specs.cylinders.includes(cyl);
+                    if (!isAvailable) return null;
+                    return (
+                      <option key={cyl} value={cyl} className="bg-slate-950">{cyl} Cylinders</option>
+                    );
+                  })}
                 </select>
                 <label className="absolute left-0 -top-4 text-white/30 text-[10px] tracking-widest">
                   CYLINDER_ACTUATORS
@@ -296,14 +309,23 @@ export default function CyberPredictor() {
               </div>
               <div className="cyber-input-group relative group">
                 <select
-                  className="w-full bg-transparent border-b border-white/20 py-4 text-white focus:outline-none focus:border-purple-500 transition-all appearance-none"
+                  className="w-full bg-transparent border-b border-white/20 py-4 text-white focus:outline-none focus:border-purple-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all appearance-none"
                   value={formData.fuel}
                   onChange={(e) => setFormData({ ...formData, fuel: e.target.value })}
+                  disabled={isFormLocked}
                 >
-                  <option value="gas" className="bg-slate-950">Gasoline</option>
-                  <option value="diesel" className="bg-slate-950">Diesel</option>
-                  <option value="hybrid" className="bg-slate-950">Hybrid</option>
-                  <option value="electric" className="bg-slate-950">Electric</option>
+                  {[
+                    { val: 'gas', label: 'Gasoline' },
+                    { val: 'diesel', label: 'Diesel' },
+                    { val: 'hybrid', label: 'Hybrid' },
+                    { val: 'electric', label: 'Electric' }
+                  ].map((f) => {
+                    const isAvailable = specs.fuels.includes(f.val);
+                    if (!isAvailable) return null;
+                    return (
+                      <option key={f.val} value={f.val} className="bg-slate-950">{f.label}</option>
+                    );
+                  })}
                 </select>
                 <label className="absolute left-0 -top-4 text-white/30 text-[10px] tracking-widest">
                   ENERGY_SOURCE
@@ -314,13 +336,22 @@ export default function CyberPredictor() {
             <div className="grid grid-cols-2 gap-8">
               <div className="cyber-input-group relative group">
                 <select
-                  className="w-full bg-transparent border-b border-white/20 py-4 text-white focus:outline-none focus:border-purple-500 transition-all appearance-none"
+                  className="w-full bg-transparent border-b border-white/20 py-4 text-white focus:outline-none focus:border-purple-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all appearance-none"
                   value={formData.transmission}
                   onChange={(e) => setFormData({ ...formData, transmission: e.target.value })}
+                  disabled={isFormLocked}
                 >
-                  <option value="automatic" className="bg-slate-950">Automatic</option>
-                  <option value="manual" className="bg-slate-950">Manual</option>
-                  <option value="other" className="bg-slate-950">Other</option>
+                  {[
+                    { val: 'automatic', label: 'Automatic' },
+                    { val: 'manual', label: 'Manual' },
+                    { val: 'other', label: 'Other' }
+                  ].map((t) => {
+                    const isAvailable = specs.transmissions.includes(t.val);
+                    if (!isAvailable) return null;
+                    return (
+                      <option key={t.val} value={t.val} className="bg-slate-950">{t.label}</option>
+                    );
+                  })}
                 </select>
                 <label className="absolute left-0 -top-4 text-white/30 text-[10px] tracking-widest">
                   GEARBOX_SYSTEM
@@ -328,23 +359,32 @@ export default function CyberPredictor() {
               </div>
               <div className="cyber-input-group relative group">
                 <select
-                  className="w-full bg-transparent border-b border-white/20 py-4 text-white focus:outline-none focus:border-cyan-500 transition-all appearance-none"
+                  className="w-full bg-transparent border-b border-white/20 py-4 text-white focus:outline-none focus:border-cyan-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all appearance-none capitalize"
                   value={formData.type}
                   onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                  disabled={isFormLocked}
                 >
-                  <option value="sedan" className="bg-slate-950">Sedan</option>
-                  <option value="suv" className="bg-slate-950">SUV</option>
-                  <option value="pickup" className="bg-slate-950">Pickup</option>
-                  <option value="truck" className="bg-slate-950">Truck</option>
-                  <option value="coupe" className="bg-slate-950">Coupe</option>
-                  <option value="hatchback" className="bg-slate-950">Hatchback</option>
-                  <option value="mini-van" className="bg-slate-950">Mini-van</option>
-                  <option value="convertible" className="bg-slate-950">Convertible</option>
-                  <option value="van" className="bg-slate-950">Van</option>
-                  <option value="wagon" className="bg-slate-950">Wagon</option>
-                  <option value="offroad" className="bg-slate-950">Offroad</option>
-                  <option value="bus" className="bg-slate-950">Bus</option>
-                  <option value="other" className="bg-slate-950">Other</option>
+                  {[
+                    { val: 'sedan', label: 'Sedan' },
+                    { val: 'suv', label: 'SUV' },
+                    { val: 'pickup', label: 'Pickup' },
+                    { val: 'truck', label: 'Truck' },
+                    { val: 'coupe', label: 'Coupe' },
+                    { val: 'hatchback', label: 'Hatchback' },
+                    { val: 'mini-van', label: 'Mini-van' },
+                    { val: 'convertible', label: 'Convertible' },
+                    { val: 'van', label: 'Van' },
+                    { val: 'wagon', label: 'Wagon' },
+                    { val: 'offroad', label: 'Offroad' },
+                    { val: 'bus', label: 'Bus' },
+                    { val: 'other', label: 'Other' }
+                  ].map((t) => {
+                    const isAvailable = specs.types.includes(t.val);
+                    if (!isAvailable) return null;
+                    return (
+                      <option key={t.val} value={t.val} className="bg-slate-950">{t.label}</option>
+                    );
+                  })}
                 </select>
                 <label className="absolute left-0 -top-4 text-white/30 text-[10px] tracking-widest">
                   CHASSIS_GEOMETRY
@@ -355,14 +395,23 @@ export default function CyberPredictor() {
             <div className="grid grid-cols-2 gap-8">
               <div className="cyber-input-group relative group">
                 <select
-                  className="w-full bg-transparent border-b border-white/20 py-4 text-white focus:outline-none focus:border-cyan-500 transition-all appearance-none"
+                  className="w-full bg-transparent border-b border-white/20 py-4 text-white focus:outline-none focus:border-cyan-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all appearance-none"
                   value={formData.size}
                   onChange={(e) => setFormData({ ...formData, size: e.target.value })}
+                  disabled={isFormLocked}
                 >
-                  <option value="sub-compact" className="bg-slate-950">Sub-Compact</option>
-                  <option value="compact" className="bg-slate-950">Compact</option>
-                  <option value="mid-size" className="bg-slate-950">Mid-Size</option>
-                  <option value="full-size" className="bg-slate-950">Full-Size</option>
+                  {[
+                    { val: 'sub-compact', label: 'Sub-Compact' },
+                    { val: 'compact', label: 'Compact' },
+                    { val: 'mid-size', label: 'Mid-Size' },
+                    { val: 'full-size', label: 'Full-Size' }
+                  ].map((s) => {
+                    const isAvailable = specs.sizes.includes(s.val);
+                    if (!isAvailable) return null;
+                    return (
+                      <option key={s.val} value={s.val} className="bg-slate-950">{s.label}</option>
+                    );
+                  })}
                 </select>
                 <label className="absolute left-0 -top-4 text-white/30 text-[10px] tracking-widest">
                   DIMENSION_SCALE
@@ -370,9 +419,10 @@ export default function CyberPredictor() {
               </div>
               <div className="cyber-input-group relative group">
                 <select
-                  className="w-full bg-transparent border-b border-white/20 py-4 text-white focus:outline-none focus:border-purple-500 transition-all appearance-none"
+                  className="w-full bg-transparent border-b border-white/20 py-4 text-white focus:outline-none focus:border-purple-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all appearance-none"
                   value={formData.condition}
                   onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
+                  disabled={isFormLocked}
                 >
                   <option value="salvage" className="bg-slate-950">Salvage</option>
                   <option value="fair" className="bg-slate-950">Fair</option>
@@ -390,9 +440,10 @@ export default function CyberPredictor() {
             <div className="grid grid-cols-2 gap-8">
               <div className="cyber-input-group relative group">
                 <select
-                  className="w-full bg-transparent border-b border-white/20 py-4 text-white focus:outline-none focus:border-purple-500 transition-all appearance-none"
+                  className="w-full bg-transparent border-b border-white/20 py-4 text-white focus:outline-none focus:border-purple-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all appearance-none"
                   value={formData.titleStatus}
                   onChange={(e) => setFormData({ ...formData, titleStatus: e.target.value })}
+                  disabled={isFormLocked}
                 >
                   <option value="clean" className="bg-slate-950">Clean</option>
                   <option value="rebuilt" className="bg-slate-950">Rebuilt</option>
@@ -407,20 +458,29 @@ export default function CyberPredictor() {
               </div>
               <div className="cyber-input-group relative">
                 <div className="flex gap-2 mt-2">
-                  {['fwd', 'rwd', '4wd'].map((drive) => (
-                    <label key={drive} className="cursor-pointer flex-1">
-                      <input
-                        type="radio"
-                        name="drive"
-                        className="peer sr-only"
-                        checked={formData.drive === drive}
-                        onChange={() => setFormData({ ...formData, drive })}
-                      />
-                      <div className="py-2 text-center rounded border border-white/10 text-[10px] tracking-wider text-white/40 peer-checked:border-cyan-500 peer-checked:text-cyan-400 peer-checked:bg-cyan-950/20 uppercase font-mono font-bold transition-all">
-                        {drive}
-                      </div>
-                    </label>
-                  ))}
+                  {['fwd', 'rwd', '4wd'].map((drive) => {
+                    const isAvailable = specs.drives.includes(drive);
+                    const isDriveChecked = formData.drive === drive;
+                    return (
+                      <label key={drive} className={`cursor-pointer flex-1 ${(!isAvailable || isFormLocked) ? 'opacity-30 cursor-not-allowed' : ''}`}>
+                        <input
+                          type="radio"
+                          name="drive"
+                          className="peer sr-only"
+                          checked={isDriveChecked}
+                          onChange={() => {
+                            if (isAvailable && !isFormLocked) {
+                              setFormData({ ...formData, drive });
+                            }
+                          }}
+                          disabled={!isAvailable || isFormLocked}
+                        />
+                        <div className="py-2 text-center rounded border border-white/10 text-[10px] tracking-wider text-white/40 peer-checked:border-cyan-500 peer-checked:text-cyan-400 peer-checked:bg-cyan-950/20 uppercase font-mono font-bold transition-all">
+                          {drive}
+                        </div>
+                      </label>
+                    );
+                  })}
                 </div>
                 <label className="absolute left-0 -top-4 text-white/30 text-[10px] tracking-widest">
                   DRIVE_ACTUATION
@@ -430,16 +490,20 @@ export default function CyberPredictor() {
 
             <button
               type="submit"
-              className="w-full relative group/btn py-6 border border-cyan-500/50 hover:border-cyan-400 transition-colors overflow-hidden"
-              disabled={loading}
+              className="w-full relative group/btn py-6 border border-cyan-500/50 disabled:border-slate-800 disabled:opacity-40 disabled:cursor-not-allowed hover:border-cyan-400 transition-colors overflow-hidden"
+              disabled={loading || isFormLocked}
             >
               <div className="absolute inset-0 bg-cyan-500/10 -translate-x-full group-hover/btn:translate-x-0 transition-transform duration-500"></div>
-              <span className="relative z-10 text-cyan-400 font-black tracking-[0.3em] uppercase text-sm italic group-hover/btn:text-white transition-colors">
-                {loading ? 'ANALYZING_DATA...' : 'EXECUTE_PREDICTION'}
+              <span className="relative z-10 text-cyan-400 disabled:text-slate-600 font-black tracking-[0.3em] uppercase text-sm italic group-hover/btn:text-white transition-colors">
+                {loading ? 'ANALYZING_DATA...' : isFormLocked ? 'SYSTEM_LOCKED' : 'EXECUTE_PREDICTION'}
               </span>
               {/* Corner Accents */}
-              <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-cyan-500"></div>
-              <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-cyan-500"></div>
+              {!isFormLocked && (
+                <>
+                  <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-cyan-500"></div>
+                  <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-cyan-500"></div>
+                </>
+              )}
             </button>
           </form>
         </div>
@@ -509,7 +573,7 @@ export default function CyberPredictor() {
                 <div className="text-right space-y-2 md:space-y-4">
                   <div>
                     <div className="text-[8px] md:text-[10px] text-white/40 uppercase mb-1">R² Accuracy</div>
-                    <div className="text-cyan-400 font-mono text-lg md:text-xl font-bold">69.1%</div>
+                    <div className="text-cyan-400 font-mono text-lg md:text-xl font-bold">95.6%</div>
                   </div>
                   <div>
                     <div className="text-[8px] md:text-[10px] text-white/40 uppercase mb-1">Est_Depreciation</div>
