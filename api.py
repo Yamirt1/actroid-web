@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import joblib
 import uvicorn
+import json
 
 app = FastAPI(title="Actroid Web ML Predictor API")
 
@@ -19,11 +20,21 @@ app.add_middleware(
 # Load the trained model and feature list
 MODEL_PATH = 'rf_model.joblib'
 if not os.path.exists(MODEL_PATH):
-    raise FileNotFoundError(f"Model file {MODEL_PATH} not found. Run train_and_export.py first.")
+    raise FileNotFoundError(f"Model file {MODEL_PATH} not found. Run train_and_export_colab.py first.")
 
 model_data = joblib.load(MODEL_PATH)
 rf_model = model_data['model']
 feature_names = model_data['features']
+
+# Load brand and model target encodings
+with open('manufacturer_to_TE.json', 'r') as f:
+    manufacturer_to_TE = json.load(f)
+with open('model_to_TE.json', 'r') as f:
+    model_to_TE = json.load(f)
+
+# Global fallbacks for brands or models not in the training set
+GLOBAL_MANUFACTURER_TE = float(sum(manufacturer_to_TE.values()) / len(manufacturer_to_TE))
+GLOBAL_MODEL_TE = float(sum(model_to_TE.values()) / len(model_to_TE))
 
 class PredictRequest(BaseModel):
     marca: str
@@ -65,65 +76,16 @@ def map_condition(c: str) -> int:
     elif c == 'new': return 5
     return 3
 
-# Brand and Model multipliers for realistic prices
-BRAND_MULTIPLIERS = {
-    'acura': 1.1,
-    'alfa-romeo': 1.3,
-    'aston-martin': 4.5,
-    'audi': 1.3,
-    'bmw': 1.35,
-    'buick': 0.9,
-    'cadillac': 1.2,
-    'chevrolet': 0.95,
-    'chrysler': 0.9,
-    'datsun': 0.8,
-    'dodge': 1.0,
-    'ferrari': 6.5,
-    'fiat': 0.75,
-    'ford': 0.95,
-    'gmc': 1.1,
-    'harley-davidson': 1.0,
-    'honda': 1.0,
-    'hyundai': 0.85,
-    'infiniti': 1.1,
-    'jaguar': 1.4,
-    'jeep': 1.15,
-    'kia': 0.85,
-    'land rover': 1.8,
-    'lexus': 1.3,
-    'lincoln': 1.15,
-    'mazda': 0.95,
-    'mercedes-benz': 1.45,
-    'mercury': 0.8,
-    'mini': 1.05,
-    'mitsubishi': 0.8,
-    'nissan': 0.9,
-    'pontiac': 0.85,
-    'porsche': 2.5,
-    'ram': 1.25,
-    'rover': 0.75,
-    'saturn': 0.7,
-    'subaru': 1.05,
-    'tesla': 1.6,
-    'toyota': 1.05,
-    'volkswagen': 0.95,
-    'volvo': 1.2,
-}
-
-MODEL_MULTIPLIERS = {
-    'ferrari:458': 1.5,
-    'ferrari:488': 1.7,
-    'ferrari:california': 1.0,
-    'audi:r8': 3.2,
-    'chevrolet:corvette': 1.8,
-    'ford:mustang': 1.15,
-    'porsche:911': 2.2,
-    'nissan:gt-r': 3.0,
-}
-
 @app.post("/predict")
 def predict(request: PredictRequest):
-    # 1. Map features
+    # 1. Look up target encodings for brand and model
+    brand_clean = request.marca.lower().strip()
+    model_clean = request.modelo.lower().strip()
+    
+    man_te_val = manufacturer_to_TE.get(brand_clean, GLOBAL_MANUFACTURER_TE)
+    mod_te_val = model_to_TE.get(model_clean, GLOBAL_MODEL_TE)
+    
+    # 2. Map features
     feature_map = {
         'odometer': request.mileage,
         'size': map_size(request.size),
@@ -154,27 +116,20 @@ def predict(request: PredictRequest):
         'type_truck': 1 if request.type == 'truck' else 0,
         'type_van': 1 if request.type == 'van' else 0,
         'type_wagon': 1 if request.type == 'wagon' else 0,
+        'manufacturer_TE': man_te_val,
+        'model_TE': mod_te_val,
     }
     
     # Match the exact feature columns order
     input_vector = [feature_map.get(feat, 0.0) for feat in feature_names]
     
-    # 2. Get base prediction from the model
+    # 3. Get base prediction from the model
     base_price = float(rf_model.predict([input_vector])[0])
     if base_price < 200:
         base_price = 200
         
-    # 3. Apply brand and model multipliers
-    brand_clean = request.marca.lower().strip()
-    model_clean = request.modelo.lower().strip()
-    
-    brand_mult = BRAND_MULTIPLIERS.get(brand_clean, 1.0)
-    
-    # Check model specific multiplier
-    model_key = f"{brand_clean}:{model_clean}"
-    model_mult = MODEL_MULTIPLIERS.get(model_key, 1.0)
-    
-    final_price = base_price * brand_mult * model_mult
+    # The model already predicts the price directly utilizing TE columns
+    final_price = base_price
     
     # 4. Calculate simulated depreciation
     deprecation = int(request.mileage * 0.05)
