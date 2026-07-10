@@ -465,10 +465,10 @@ export default function Predictor() {
                   <div className="w-full text-left">
                     <div className="flex justify-between text-xs mb-2 items-center">
                       <span className="text-slate-100 font-medium text-sm">Precisión del Modelo (R²)</span>
-                      <span className="text-cyan-400 font-bold text-sm">95.6%</span>
+                      <span className="text-cyan-400 font-bold text-sm">77.9%</span>
                     </div>
                     <div className="w-full bg-slate-800 rounded-full h-1.5 mb-6">
-                      <div className="bg-cyan-500 h-1.5 rounded-full shadow-[0_0_10px_rgba(6,182,212,0.8)]" style={{ width: '95.6%' }}></div>
+                      <div className="bg-cyan-500 h-1.5 rounded-full shadow-[0_0_10px_rgba(6,182,212,0.8)]" style={{ width: '77.9%' }}></div>
                     </div>
                   </div>
 

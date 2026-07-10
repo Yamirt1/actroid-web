@@ -17,9 +17,9 @@ def main():
     print(f"Features for training ({len(feature_names)}):")
     print(feature_names)
     
-    # Train Random Forest Regressor (Colab configuration)
-    print("Training Random Forest Regressor (default depth, random_state=13)...")
-    rf = RandomForestRegressor(random_state=13, n_jobs=-1)
+    # Train Random Forest Regressor (Colab configuration optimized for size/generalization)
+    print("Training Random Forest Regressor (max_depth=18, min_samples_leaf=2, random_state=13)...")
+    rf = RandomForestRegressor(n_estimators=100, max_depth=18, min_samples_leaf=2, random_state=13, n_jobs=-1)
     rf.fit(X, y)
     
     # Save the model and feature names using joblib
