@@ -101,7 +101,7 @@ export default function Predictor() {
     }, 10);
 
     // Fetch prediction from FastAPI backend
-    const fetchPromise = fetch("http://127.0.0.1:8000/predict", {
+    const fetchPromise = fetch("https://actroid-web.onrender.com/predict", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
