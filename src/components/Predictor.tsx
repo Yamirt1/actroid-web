@@ -153,23 +153,68 @@ export default function Predictor() {
           year: formData.year,
           brand: `${formData.marca} ${formData.modelo}`.trim() || 'Vehículo'
         });
+
+        // Dispatch custom event to notify simulator
+        const event = new CustomEvent('car-prediction-made', {
+          detail: {
+            name: 'Tu Consulta',
+            marca: formData.marca,
+            modelo: formData.modelo,
+            year: formData.year,
+            mileage: formData.mileage,
+            fuel: formData.fuel === 'gas' ? 'Gas' : formData.fuel === 'electric' ? 'Electric' : formData.fuel === 'hybrid' ? 'Hybrid' : 'Diesel',
+            brandTE: apiResult.brand_te || 15400.0,
+            modelTE: apiResult.model_te || 18200.0,
+            treeVotes: [
+              Math.round(apiResult.price * 0.98),
+              Math.round(apiResult.price * 1.03),
+              Math.round(apiResult.price * 0.99)
+            ],
+            finalPrice: Math.round(apiResult.price)
+          }
+        });
+        window.dispatchEvent(event);
+
         setLoading(false);
       })
       .catch(err => {
         console.error("Failed to fetch prediction from API, falling back to basic calculation", err);
         // Fallback calculation so that the app doesn't break if API is offline
         const fallbackPrice = 15000 + (formData.year - 2010) * 1000 - (formData.mileage * 0.05);
+        const finalPriceVal = fallbackPrice < 500 ? 500 : fallbackPrice;
         const make = encodeURIComponent(formData.marca.toLowerCase());
         const model = encodeURIComponent(formData.modelo.toLowerCase());
         
         setResult({
-          price: fallbackPrice < 500 ? 500 : fallbackPrice,
+          price: finalPriceVal,
           deprecation: Math.floor(formData.mileage * 0.05),
           make: make,
           model: model,
           year: formData.year,
           brand: `${formData.marca} ${formData.modelo}`.trim() || 'Vehículo'
         });
+
+        // Dispatch custom event for fallback calculation
+        const event = new CustomEvent('car-prediction-made', {
+          detail: {
+            name: 'Tu Consulta',
+            marca: formData.marca,
+            modelo: formData.modelo,
+            year: formData.year,
+            mileage: formData.mileage,
+            fuel: formData.fuel === 'gas' ? 'Gas' : formData.fuel === 'electric' ? 'Electric' : formData.fuel === 'hybrid' ? 'Hybrid' : 'Diesel',
+            brandTE: 15000.0,
+            modelTE: 16000.0,
+            treeVotes: [
+              Math.round(finalPriceVal * 0.98),
+              Math.round(finalPriceVal * 1.03),
+              Math.round(finalPriceVal * 0.99)
+            ],
+            finalPrice: Math.round(finalPriceVal)
+          }
+        });
+        window.dispatchEvent(event);
+
         setLoading(false);
       });
   };;

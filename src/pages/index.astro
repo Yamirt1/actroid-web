@@ -1,5 +1,6 @@
 ---
 import Predictor from '../components/Predictor';
+import HowItWorks from '../components/HowItWorks';
 import '../styles/global.css';
 ---
 
@@ -93,6 +94,11 @@ import '../styles/global.css';
         <Predictor client:load />
     </section>
 
+    <!-- CÓMO FUNCIONA / SIMULADOR SECTION -->
+    <section id="como-funciona" class="container mx-auto px-6 py-24 border-t border-slate-900/60">
+        <HowItWorks client:load />
+    </section>
+
     <!-- GSAP & Lenis Animations -->
     <script>
         import { gsap } from 'gsap';
@@ -151,6 +157,19 @@ import '../styles/global.css';
             duration: 1.5,
             ease: 'power3.out'
         });
+
+        // Scroll Reveal for How It Works
+        gsap.from('#como-funciona', {
+            scrollTrigger: {
+                trigger: '#como-funciona',
+                start: 'top 80%',
+            },
+            opacity: 0,
+            y: 50,
+            duration: 1.5,
+            ease: 'power3.out'
+        });
+
     </script>
 </body>
 </html>

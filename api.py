@@ -137,7 +137,9 @@ def predict(request: PredictRequest):
     return {
         "price": final_price,
         "deprecation": deprecation,
-        "base_price": base_price
+        "base_price": base_price,
+        "brand_te": man_te_val,
+        "model_te": mod_te_val
     }
 
 if __name__ == "__main__":
