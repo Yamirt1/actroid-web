@@ -5,6 +5,32 @@ import { VEHICLE_DATA, getSpecs } from './vehicleData';
 export default function Predictor() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [currentAngle, setCurrentAngle] = useState(21);
+
+  const isDraggingRef = useRef(false);
+  const startXRef = useRef(0);
+  const startAngleRef = useRef(21);
+
+  const handleDragStart = (clientX: number) => {
+    isDraggingRef.current = true;
+    startXRef.current = clientX;
+    startAngleRef.current = currentAngle;
+  };
+
+  const handleDragMove = (clientX: number) => {
+    if (!isDraggingRef.current) return;
+    const dx = clientX - startXRef.current;
+    // 12px of movement rotates 1 step
+    const stepDiff = Math.floor(dx / 12);
+    let newAngle = (startAngleRef.current - stepDiff) % 32;
+    if (newAngle <= 0) newAngle += 32;
+    setCurrentAngle(newAngle);
+  };
+
+  const handleDragEnd = () => {
+    isDraggingRef.current = false;
+  };
+
   const [formData, setFormData] = useState({
     marca: '',
     modelo: '',
@@ -116,13 +142,15 @@ export default function Predictor() {
 
     Promise.all([fetchPromise, delayPromise])
       .then(([apiResult]) => {
-        const keyword = `${formData.marca} ${formData.modelo}`.trim().toLowerCase().replace(/\s+/g, ',');
-        const imageUrl = `https://loremflickr.com/600/400/${keyword || 'car'},car?random=${Math.random()}`;
+        const make = encodeURIComponent(formData.marca.toLowerCase());
+        const model = encodeURIComponent(formData.modelo.toLowerCase());
 
         setResult({
           price: apiResult.price,
           deprecation: apiResult.deprecation,
-          imageUrl: imageUrl,
+          make: make,
+          model: model,
+          year: formData.year,
           brand: `${formData.marca} ${formData.modelo}`.trim() || 'Vehículo'
         });
         setLoading(false);
@@ -131,13 +159,15 @@ export default function Predictor() {
         console.error("Failed to fetch prediction from API, falling back to basic calculation", err);
         // Fallback calculation so that the app doesn't break if API is offline
         const fallbackPrice = 15000 + (formData.year - 2010) * 1000 - (formData.mileage * 0.05);
-        const keyword = `${formData.marca} ${formData.modelo}`.trim().toLowerCase().replace(/\s+/g, ',');
-        const imageUrl = `https://loremflickr.com/600/400/${keyword || 'car'},car?random=${Math.random()}`;
+        const make = encodeURIComponent(formData.marca.toLowerCase());
+        const model = encodeURIComponent(formData.modelo.toLowerCase());
         
         setResult({
           price: fallbackPrice < 500 ? 500 : fallbackPrice,
           deprecation: Math.floor(formData.mileage * 0.05),
-          imageUrl: imageUrl,
+          make: make,
+          model: model,
+          year: formData.year,
           brand: `${formData.marca} ${formData.modelo}`.trim() || 'Vehículo'
         });
         setLoading(false);
@@ -472,13 +502,62 @@ export default function Predictor() {
                     </div>
                   </div>
 
-                  <div className="w-full rounded-xl overflow-hidden border border-slate-800 shadow-lg relative bg-slate-900 animate-float">
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#050B14]/90 to-transparent z-10"></div>
-                    <img src={result.imageUrl} className="w-full h-40 object-cover opacity-90" alt="Vehículo Analizado" />
+                  <div 
+                    className="w-full rounded-2xl overflow-hidden border border-slate-800 shadow-lg relative bg-slate-900 animate-float cursor-grab active:cursor-grabbing select-none"
+                    onMouseDown={(e) => { e.preventDefault(); handleDragStart(e.clientX); }}
+                    onMouseMove={(e) => { if (isDraggingRef.current) { e.preventDefault(); handleDragMove(e.clientX); } }}
+                    onMouseUp={handleDragEnd}
+                    onMouseLeave={handleDragEnd}
+                    onTouchStart={(e) => handleDragStart(e.touches[0].clientX)}
+                    onTouchMove={(e) => handleDragMove(e.touches[0].clientX)}
+                    onTouchEnd={handleDragEnd}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#050B14]/90 to-transparent z-10 pointer-events-none"></div>
+                    <img 
+                      src={`https://cdn.imagin.studio/getImage?customer=img&make=${result.make}&modelFamily=${result.model}&modelYear=${result.year}&angle=${String(currentAngle).padStart(2, '0')}&zoomType=fullscreen`} 
+                      className="w-full h-60 md:h-72 object-cover opacity-90 transition-all duration-300 pointer-events-none select-none" 
+                      alt="Vehículo Analizado" 
+                      draggable="false"
+                    />
                     <div className="absolute bottom-3 left-4 z-20">
                       <span className="text-xs font-bold text-white bg-cyan-600/90 px-2.5 py-1 rounded-md backdrop-blur-md uppercase tracking-wider shadow-md">
                         {result.brand}
                       </span>
+                    </div>
+                  </div>
+
+                  {/* Hint text */}
+                  <div className="text-[10px] text-slate-500 font-medium text-center mt-2.5 flex items-center justify-center gap-1.5 select-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" className="text-slate-500 animate-pulse"><path d="M7 15h10M4 9h16M14 4h-4"/><circle cx="12" cy="12" r="10"/></svg>
+                    Haz clic y arrastra horizontalmente para rotar el carro 360°
+                  </div>
+
+                  {/* Selector de Ángulo de Cámara */}
+                  <div className="mt-4 flex justify-between items-center bg-slate-950/60 p-2.5 rounded-xl border border-slate-800 backdrop-blur-md">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider pl-1 flex items-center gap-1.5 select-none">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" className="text-cyan-400"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                      Ángulo Cámara
+                    </span>
+                    <div className="flex gap-1.5">
+                      {[
+                        { id: 21, label: 'Diag 1' },
+                        { id: 29, label: 'Diag 2' },
+                        { id: 23, label: 'Perfil' },
+                        { id: 1, label: 'Trasero' }
+                      ].map((angle) => (
+                        <button
+                          key={angle.id}
+                          type="button"
+                          onClick={() => setCurrentAngle(angle.id)}
+                          className={`px-3 py-1.5 rounded-lg text-[10px] font-bold tracking-wider uppercase transition-all ${
+                            currentAngle === angle.id
+                              ? 'bg-cyan-500 text-slate-950 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                              : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800'
+                          }`}
+                        >
+                          {angle.label}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </div>
