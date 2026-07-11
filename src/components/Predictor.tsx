@@ -75,6 +75,34 @@ function predictForest(forest: any[][], features: number[]): { price: number; vo
   };
 }
 
+function getDemandStatus(formData: any): { text: string; colorClass: string; bgClass: string } {
+  // Low demand: title is not clean, or mileage is extremely high (e.g. > 180,000 miles), or vehicle condition is salvage/fair
+  const isLowDemand = 
+    ['rebuilt', 'salvage', 'lien', 'missing', 'parts only'].includes(formData.titleStatus) ||
+    formData.mileage > 180000 ||
+    ['salvage', 'fair'].includes(formData.condition);
+  
+  if (isLowDemand) {
+    return { text: 'Baja', colorClass: 'text-red-400', bgClass: 'bg-red-500/10' };
+  }
+
+  // High demand: title is clean, low mileage, excellent or better condition, recent year, popular brand
+  const popularBrands = ['toyota', 'honda', 'ford', 'chevrolet', 'jeep', 'nissan'];
+  const isHighDemand = 
+    formData.titleStatus === 'clean' &&
+    formData.mileage < 60000 &&
+    ['excellent', 'like new', 'new'].includes(formData.condition) &&
+    formData.year >= 2018 &&
+    popularBrands.includes(formData.marca.toLowerCase());
+
+  if (isHighDemand) {
+    return { text: 'Alta', colorClass: 'text-cyan-400', bgClass: 'bg-cyan-500/10' };
+  }
+
+  // Default
+  return { text: 'Normal', colorClass: 'text-green-400', bgClass: 'bg-green-500/10' };
+}
+
 export default function Predictor() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
@@ -356,6 +384,7 @@ export default function Predictor() {
   const specs = getSpecs(formData.marca, formData.modelo);
   const models = formData.marca ? Object.keys(VEHICLE_DATA[formData.marca.toLowerCase()] || {}) : [];
   const isFormLocked = !formData.marca || !formData.modelo;
+  const demandInfo = getDemandStatus(formData);
 
   return (
     <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
@@ -758,12 +787,12 @@ export default function Predictor() {
                 </div>
               </div>
               <div className="flex-1 bg-slate-950 rounded-lg p-3 border border-slate-800 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-cyan-500/10 flex items-center justify-center text-cyan-400">
+                <div className={`w-8 h-8 rounded-full ${demandInfo.bgClass} flex items-center justify-center ${demandInfo.colorClass}`}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>
                 </div>
                 <div>
                   <span className="block text-[10px] text-slate-400 uppercase">Demanda ML</span>
-                  <span className="font-mono text-sm text-green-400">Normal</span>
+                  <span className={`font-mono text-sm ${demandInfo.colorClass}`}>{demandInfo.text}</span>
                 </div>
               </div>
             </div>
