@@ -9,7 +9,7 @@ import '../styles/global.css';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Actroid - Intelligent Price Predictor</title>
+    <title>SmartPrice - Intelligent Price Predictor</title>
     <!-- Google Fonts: Outfit & Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -25,9 +25,14 @@ import '../styles/global.css';
         
         <!-- Navbar Simple -->
         <nav class="container mx-auto px-6 py-6 flex justify-between items-center relative z-10">
-            <div class="text-2xl font-black text-white tracking-tight font-display" id="logo">
-                ACT<span class="text-cyan-400">ROID</span>
-            </div>
+            <a href="#" class="flex items-center gap-3.5 group relative z-10 select-none">
+                <div class="h-16 w-auto overflow-hidden bg-transparent transition-all duration-300 group-hover:scale-[1.03] group-hover:drop-shadow-[0_0_12px_rgba(6,182,212,0.4)]">
+                    <img src="/logo.png" alt="SmartPrice Logo" class="h-full w-auto object-contain" />
+                </div>
+                <div class="text-2xl font-black text-white tracking-tight font-display" id="logo">
+                    Smart<span class="text-cyan-400">Price</span>
+                </div>
+            </a>
             <div class="flex gap-6 items-center">
                 <a href="#agente" class="text-sm font-semibold text-slate-300 hover:text-white transition-colors font-display">
                     Probar Predictor
@@ -46,7 +51,7 @@ import '../styles/global.css';
             </div>
             
             <h1 class="text-5xl md:text-8xl font-black text-white mb-8 max-w-5xl tracking-tight leading-none opacity-0 font-display" id="hero-title">
-                Actroid: El Agente<br><span class="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-sky-400 to-indigo-400">que predice el futuro.</span>
+                SmartPrice: El Agente<br><span class="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-sky-400 to-indigo-400">que predice el futuro.</span>
             </h1>
             
             <p class="text-lg md:text-xl text-slate-400 max-w-3xl mb-12 leading-relaxed opacity-0 font-medium" id="hero-desc">

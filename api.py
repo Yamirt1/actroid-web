@@ -6,7 +6,7 @@ import joblib
 import uvicorn
 import json
 
-app = FastAPI(title="Actroid Web ML Predictor API")
+app = FastAPI(title="SmartPrice Web ML Predictor API")
 
 # Enable CORS for frontend requests
 app.add_middleware(
