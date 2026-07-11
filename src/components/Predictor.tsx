@@ -1,6 +1,79 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { VEHICLE_DATA, getSpecs } from './vehicleData';
+import rfModel from './rf_model.json';
+import manufacturerToTE from './manufacturer_to_TE.json';
+import modelToTE from './model_to_TE.json';
+
+// Helper mapping functions for client-side model
+function map_size(s: string): number {
+  if (s === 'sub-compact') return 0;
+  if (s === 'compact') return 1;
+  if (s === 'mid-size') return 2;
+  if (s === 'full-size') return 3;
+  return 2;
+}
+
+function map_title_status(t: string): number {
+  if (t === 'parts only') return 0;
+  if (t === 'missing') return 1;
+  if (t === 'salvage') return 2;
+  if (t === 'rebuilt') return 3;
+  if (t === 'lien') return 4;
+  if (t === 'clean') return 5;
+  return 5;
+}
+
+function map_condition(c: string): number {
+  if (c === 'salvage') return 0;
+  if (c === 'fair') return 1;
+  if (c === 'good') return 2;
+  if (c === 'excellent') return 3;
+  if (c === 'like new') return 4;
+  if (c === 'new') return 5;
+  return 3;
+}
+
+function predictTree(tree: any[], features: number[]): number {
+  let nodeIndex = 0;
+  let count = 0;
+  while (count < 1000) {
+    const node = tree[nodeIndex];
+    if (!node) return 0;
+    const isLeaf = node[0];
+    if (isLeaf) {
+      return node[1]; // Leaf value is at index 1
+    }
+    const featureIdx = node[1];
+    const threshold = node[2];
+    const val = features[featureIdx];
+    if (val <= threshold) {
+      nodeIndex = node[3];
+    } else {
+      nodeIndex = node[4];
+    }
+    count++;
+  }
+  return 0;
+}
+
+function predictForest(forest: any[][], features: number[]): { price: number; votes: number[] } {
+  let sum = 0;
+  let count = 0;
+  const votes: number[] = [];
+  for (let i = 0; i < forest.length; i++) {
+    const p = predictTree(forest[i], features);
+    if (p !== null && !isNaN(p)) {
+      sum += p;
+      votes.push(p);
+      count++;
+    }
+  }
+  return {
+    price: count > 0 ? sum / count : 0,
+    votes: votes
+  };
+}
 
 export default function Predictor() {
   const [loading, setLoading] = useState(false);
@@ -126,6 +199,10 @@ export default function Predictor() {
       }
     }, 10);
 
+    // Setup abort controller for 5 second timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     // Fetch prediction from FastAPI backend
     const fetchPromise = fetch("https://actroid-web.onrender.com/predict", {
       method: "POST",
@@ -133,9 +210,14 @@ export default function Predictor() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(formData),
+      signal: controller.signal,
     }).then(res => {
+      clearTimeout(timeoutId);
       if (!res.ok) throw new Error("API error");
       return res.json();
+    }).catch(err => {
+      clearTimeout(timeoutId);
+      throw err;
     });
 
     const delayPromise = new Promise(resolve => setTimeout(resolve, 1500));
@@ -178,10 +260,61 @@ export default function Predictor() {
         setLoading(false);
       })
       .catch(err => {
-        console.error("Failed to fetch prediction from API, falling back to basic calculation", err);
-        // Fallback calculation so that the app doesn't break if API is offline
-        const fallbackPrice = 15000 + (formData.year - 2010) * 1000 - (formData.mileage * 0.05);
-        const finalPriceVal = fallbackPrice < 500 ? 500 : fallbackPrice;
+        console.warn("API offline or timed out, using high-precision client-side Random Forest model", err);
+        
+        // 1. Calculate target encodings for brand and model
+        const brand_clean = formData.marca.toLowerCase().trim();
+        const model_clean = formData.modelo.toLowerCase().trim();
+        
+        const mTE = manufacturerToTE as Record<string, number>;
+        const modTE = modelToTE as Record<string, number>;
+
+        const GLOBAL_MANUFACTURER_TE = Object.values(mTE).reduce((a, b) => a + b, 0) / Object.keys(mTE).length;
+        const GLOBAL_MODEL_TE = Object.values(modTE).reduce((a, b) => a + b, 0) / Object.keys(modTE).length;
+
+        const man_te_val = mTE[brand_clean] || GLOBAL_MANUFACTURER_TE;
+        const mod_te_val = modTE[model_clean] || GLOBAL_MODEL_TE;
+
+        // 2. Map features to the exact order in client-side model (29 features)
+        const featureMap: Record<string, number> = {
+          'odometer': formData.mileage,
+          'size': map_size(formData.size),
+          'title_status': map_title_status(formData.titleStatus),
+          'year': formData.year,
+          'condition_encoding': map_condition(formData.condition),
+          'cylinders_int': formData.cylinders,
+          'fuel_diesel': formData.fuel === 'diesel' ? 1 : 0,
+          'fuel_electric': formData.fuel === 'electric' ? 1 : 0,
+          'fuel_gas': formData.fuel === 'gas' ? 1 : 0,
+          'fuel_hybrid': formData.fuel === 'hybrid' ? 1 : 0,
+          'drive_4wd': formData.drive === '4wd' ? 1 : 0,
+          'drive_fwd': formData.drive === 'fwd' ? 1 : 0,
+          'drive_rwd': formData.drive === 'rwd' ? 1 : 0,
+          'transmission_automatic': formData.transmission === 'automatic' ? 1 : 0,
+          'transmission_manual': formData.transmission === 'manual' ? 1 : 0,
+          'transmission_other': formData.transmission === 'other' ? 1 : 0,
+          'type_SUV': formData.type === 'suv' ? 1 : 0,
+          'type_bus': formData.type === 'bus' ? 1 : 0,
+          'type_convertible': formData.type === 'convertible' ? 1 : 0,
+          'type_coupe': formData.type === 'coupe' ? 1 : 0,
+          'type_hatchback': formData.type === 'hatchback' ? 1 : 0,
+          'type_mini-van': formData.type === 'mini-van' ? 1 : 0,
+          'type_offroad': formData.type === 'offroad' ? 1 : 0,
+          'type_other': formData.type === 'other' ? 1 : 0,
+          'type_pickup': formData.type === 'pickup' ? 1 : 0,
+          'type_sedan': formData.type === 'sedan' ? 1 : 0,
+          'type_truck': formData.type === 'truck' ? 1 : 0,
+          'type_van': formData.type === 'van' ? 1 : 0,
+          'type_wagon': formData.type === 'wagon' ? 1 : 0
+        };
+
+        const features = rfModel.features.map((name: string) => featureMap[name] ?? 0.0);
+        
+        // 3. Evaluate random forest model client-side
+        const evaluation = predictForest(rfModel.trees, features);
+        let finalPriceVal = evaluation.price;
+        if (finalPriceVal < 200) finalPriceVal = 200;
+
         const make = encodeURIComponent(formData.marca.toLowerCase());
         const model = encodeURIComponent(formData.modelo.toLowerCase());
         
@@ -194,6 +327,12 @@ export default function Predictor() {
           brand: `${formData.marca} ${formData.modelo}`.trim() || 'Vehículo'
         });
 
+        // Extract tree votes for the simulator (first 3 trees, or sample them)
+        const votes = evaluation.votes.slice(0, 3).map(v => Math.round(v));
+        while (votes.length < 3) {
+          votes.push(Math.round(finalPriceVal));
+        }
+
         // Dispatch custom event for fallback calculation
         const event = new CustomEvent('car-prediction-made', {
           detail: {
@@ -203,13 +342,9 @@ export default function Predictor() {
             year: formData.year,
             mileage: formData.mileage,
             fuel: formData.fuel === 'gas' ? 'Gas' : formData.fuel === 'electric' ? 'Electric' : formData.fuel === 'hybrid' ? 'Hybrid' : 'Diesel',
-            brandTE: 15000.0,
-            modelTE: 16000.0,
-            treeVotes: [
-              Math.round(finalPriceVal * 0.98),
-              Math.round(finalPriceVal * 1.03),
-              Math.round(finalPriceVal * 0.99)
-            ],
+            brandTE: man_te_val,
+            modelTE: mod_te_val,
+            treeVotes: votes,
             finalPrice: Math.round(finalPriceVal)
           }
         });
@@ -217,7 +352,7 @@ export default function Predictor() {
 
         setLoading(false);
       });
-  };;
+  };
   const specs = getSpecs(formData.marca, formData.modelo);
   const models = formData.marca ? Object.keys(VEHICLE_DATA[formData.marca.toLowerCase()] || {}) : [];
   const isFormLocked = !formData.marca || !formData.modelo;
