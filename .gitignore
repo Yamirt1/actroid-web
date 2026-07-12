@@ -23,3 +23,11 @@ pnpm-debug.log*
 # jetbrains setting folder
 .idea/
 
+# python caches and models
+__pycache__/
+*.joblib
+*.pkl
+*.json
+!src/components/*.json
+!package.json
+!tsconfig.json
