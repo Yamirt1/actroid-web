@@ -62,7 +62,7 @@ export default function CarViewer({ loading, result, demandInfo }: CarViewerProp
 
   return (
     <>
-      <div className="relative flex-1 flex flex-col p-10 overflow-hidden">
+      <div className="relative flex-1 flex flex-col p-5 sm:p-10 overflow-hidden">
         <div className="absolute inset-0 opacity-30 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:24px_24px]"></div>
 
         {loading && (
@@ -122,7 +122,7 @@ export default function CarViewer({ loading, result, demandInfo }: CarViewerProp
                 <div className="absolute inset-0 bg-gradient-to-t from-[#050B14]/90 to-transparent z-10 pointer-events-none"></div>
                 <img
                   src={`https://cdn.imagin.studio/getImage?customer=img&make=${result.make}&modelFamily=${result.model}&modelYear=${result.year}&angle=${String(currentAngle).padStart(2, '0')}&zoomType=fullscreen`}
-                  className="w-full h-60 md:h-72 object-cover opacity-90 transition-all duration-300 pointer-events-none select-none"
+                  className="w-full h-60 md:h-72 object-contain opacity-90 transition-all duration-300 pointer-events-none select-none"
                   alt="Vehículo Analizado"
                   draggable="false"
                 />
@@ -140,12 +140,12 @@ export default function CarViewer({ loading, result, demandInfo }: CarViewerProp
               </div>
 
               {/* Selector de Ángulo de Cámara */}
-              <div className="mt-4 flex justify-between items-center bg-slate-950/60 p-2.5 rounded-xl border border-slate-800 backdrop-blur-md">
+              <div className="mt-4 flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center bg-slate-950/60 p-2.5 rounded-xl border border-slate-800 backdrop-blur-md">
                 <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider pl-1 flex items-center gap-1.5 select-none">
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" className="text-cyan-400"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>
                   Ángulo Cámara
                 </span>
-                <div className="flex gap-1.5">
+                <div className="flex flex-wrap gap-1.5 w-full sm:w-auto">
                   {[
                     { id: 21, label: 'Diag 1' },
                     { id: 29, label: 'Diag 2' },
@@ -156,7 +156,7 @@ export default function CarViewer({ loading, result, demandInfo }: CarViewerProp
                       key={angle.id}
                       type="button"
                       onClick={() => setCurrentAngle(angle.id)}
-                      className={`px-3 py-1.5 rounded-lg text-[10px] font-bold tracking-wider uppercase transition-all ${currentAngle === angle.id
+                      className={`flex-1 sm:flex-initial text-center px-3 py-1.5 rounded-lg text-[10px] font-bold tracking-wider uppercase transition-all ${currentAngle === angle.id
                           ? 'bg-cyan-500 text-slate-950 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
                           : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800'
                         }`}

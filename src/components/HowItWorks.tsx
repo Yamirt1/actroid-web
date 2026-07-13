@@ -130,7 +130,7 @@ export default function HowItWorks() {
   }, [activeStep, selectedSampleIndex]);
 
   return (
-    <div className="max-w-4xl mx-auto glass-card rounded-3xl p-6 md:p-8 border border-slate-800 shadow-2xl relative bg-[#040813]/60 backdrop-blur-md overflow-hidden select-none">
+    <div className="max-w-4xl mx-auto glass-card rounded-3xl p-4 sm:p-6 md:p-8 border border-slate-800 shadow-2xl relative bg-[#040813]/60 backdrop-blur-md overflow-hidden select-none">
       
       {/* Grid Overlay */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(56,189,248,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(56,189,248,0.02)_1px,transparent_1px)] bg-[size:30px_30px] pointer-events-none z-0"></div>
@@ -147,7 +147,7 @@ export default function HowItWorks() {
 
         {/* Controls */}
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex bg-slate-900/80 p-1 rounded-xl border border-slate-800">
+          <div className="flex flex-wrap bg-slate-900/80 p-1 rounded-xl border border-slate-800">
             {samplesList.map((s, idx) => (
               <button
                 key={s.name}

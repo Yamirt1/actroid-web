@@ -201,7 +201,7 @@ setLoading(false);`;
 
         {/* Path selectors & play controls */}
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex bg-slate-900/80 p-1 rounded-xl border border-slate-800">
+          <div className="flex flex-wrap bg-slate-900/80 p-1 rounded-xl border border-slate-800">
             <button
               type="button"
               onClick={() => { setActivePath('API'); setActiveStep(0); }}
@@ -266,7 +266,7 @@ setLoading(false);`;
             }`}>
               PASO 0{idx + 1}
             </span>
-            <span className={`block text-[10px] font-medium mt-1 truncate ${
+            <span className={`hidden sm:block text-[10px] font-medium mt-1 truncate ${
               activeStep === idx ? 'text-white' : 'text-slate-500'
             }`}>
               {step.title}

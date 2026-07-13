@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import rfModel from './rf_model.json';
 import manufacturerToTE from './manufacturer_to_TE.json';
 import modelToTE from './model_to_TE.json';
@@ -230,6 +230,21 @@ export default function Predictor() {
 
   const demandInfo = getDemandStatus(formData);
 
+  // Auto-scroll to results on mobile/tablet viewports once the prediction is loaded
+  useEffect(() => {
+    if (result && !loading) {
+      if (window.innerWidth < 1024) {
+        const timer = setTimeout(() => {
+          document.getElementById('predictor-result')?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }, 150);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [result, loading]);
+
   return (
     <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
       {/* Left: Form */}
@@ -241,7 +256,7 @@ export default function Predictor() {
       />
 
       {/* Right: Result & Log Inspector */}
-      <div className="lg:col-span-5 sticky top-12">
+      <div id="predictor-result" className="lg:col-span-5 lg:sticky lg:top-12 scroll-mt-24">
         <div className="bg-[#050B14] border border-slate-800 rounded-3xl overflow-hidden shadow-2xl relative group h-full min-h-[500px] flex flex-col">
           <CarViewer
             loading={loading}

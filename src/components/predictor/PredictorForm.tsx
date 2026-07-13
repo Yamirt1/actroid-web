@@ -74,7 +74,7 @@ export default function PredictorForm({ formData, setFormData, onSubmit, loading
   };
 
   return (
-    <div className="lg:col-span-7 glass-card p-8 rounded-3xl shadow-2xl">
+    <div className="lg:col-span-7 glass-card p-5 sm:p-8 rounded-3xl shadow-2xl">
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-white mb-2">Parámetros del Vehículo</h2>
         <p className="text-slate-400 text-sm">Ajusta las variables basadas en el dataset para obtener la predicción del modelo Random Forest.</p>
