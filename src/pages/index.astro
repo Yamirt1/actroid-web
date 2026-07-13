@@ -1,5 +1,6 @@
 ---
 import Predictor from '../components/Predictor';
+import HowItWorksBehind from '../components/HowItWorksBehind';
 import HowItWorks from '../components/HowItWorks';
 import '../styles/global.css';
 ---
@@ -35,7 +36,10 @@ import '../styles/global.css';
             </a>
             <div class="flex gap-6 items-center">
                 <a href="#agente" class="text-sm font-semibold text-slate-300 hover:text-white transition-colors font-display">
-                    Probar Predictor
+                    Predecir
+                </a>
+                <a href="#como-funciona-detras" class="text-sm font-semibold text-slate-300 hover:text-white transition-colors font-display">
+                    Cómo Funciona
                 </a>
             </div>
         </nav>
@@ -99,6 +103,11 @@ import '../styles/global.css';
         <Predictor client:load />
     </section>
 
+    <!-- CÓMO FUNCIONA DETRÁS DE ESCENA -->
+    <section id="como-funciona-detras" class="container mx-auto px-6 py-24 border-t border-slate-900/60">
+        <HowItWorksBehind client:load />
+    </section>
+
     <!-- CÓMO FUNCIONA / SIMULADOR SECTION -->
     <section id="como-funciona" class="container mx-auto px-6 py-24 border-t border-slate-900/60">
         <HowItWorks client:load />
@@ -155,6 +164,18 @@ import '../styles/global.css';
         gsap.from('#agente', {
             scrollTrigger: {
                 trigger: '#agente',
+                start: 'top 80%',
+            },
+            opacity: 0,
+            y: 50,
+            duration: 1.5,
+            ease: 'power3.out'
+        });
+
+        // Scroll Reveal for How It Works Behind
+        gsap.from('#como-funciona-detras', {
+            scrollTrigger: {
+                trigger: '#como-funciona-detras',
                 start: 'top 80%',
             },
             opacity: 0,
