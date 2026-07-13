@@ -23,14 +23,14 @@ def main():
     # Evaluate model R2 score using train/test split (15% validation)
     print("Evaluating model performance (15% test split)...")
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15, random_state=42)
-    rf_eval = RandomForestRegressor(n_estimators=100, max_depth=25, random_state=42, n_jobs=-1)
+    rf_eval = RandomForestRegressor(n_estimators=50, max_depth=16, min_samples_leaf=4, random_state=42, n_jobs=-1)
     rf_eval.fit(X_train, y_train)
     r2_score = rf_eval.score(X_test, y_test)
     print(f"R² Score: {r2_score:.5f} ({r2_score * 100:.2f}%)")
     
-    # Train Random Forest Regressor (Optimized: 100 trees, max_depth=25)
-    print("Training Random Forest Regressor on full dataset (100 trees, max_depth=25)...")
-    rf = RandomForestRegressor(n_estimators=100, max_depth=25, random_state=42, n_jobs=-1)
+    # Train Random Forest Regressor (Optimized for size: 50 trees, max_depth=16, min_samples_leaf=4)
+    print("Training Random Forest Regressor on full dataset...")
+    rf = RandomForestRegressor(n_estimators=50, max_depth=16, min_samples_leaf=4, random_state=42, n_jobs=-1)
     rf.fit(X, y)
     
     # Save the model and feature names using joblib

@@ -20,8 +20,8 @@ def main():
     print(feature_names)
     
     # Entrenar el modelo Random Forest (Configuración optimizada para tamaño/generalización)
-    print("Entrenando el Random Forest Regressor (max_depth=18, min_samples_leaf=2, random_state=13)...")
-    rf = RandomForestRegressor(n_estimators=100, max_depth=18, min_samples_leaf=2, random_state=13, n_jobs=-1)
+    print("Entrenando el Random Forest Regressor (n_estimators=50, max_depth=16, min_samples_leaf=4)...")
+    rf = RandomForestRegressor(n_estimators=50, max_depth=16, min_samples_leaf=4, random_state=13, n_jobs=-1)
     rf.fit(X, y)
     
     # Guardar el modelo y los nombres de las características usando joblib

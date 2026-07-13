@@ -31,3 +31,8 @@ __pycache__/
 !src/components/*.json
 !package.json
 !tsconfig.json
+
+# Allow specific trained model and encoding files needed by the API
+!rf_model.joblib
+!manufacturer_to_TE.json
+!model_to_TE.json
